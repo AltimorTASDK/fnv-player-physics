@@ -32,9 +32,9 @@ namespace ini {
 //auto fStopSpeed = IniPrefSetting("fStopSpeed:Movement", .3f);
 constexpr auto fFriction = 5.f;
 constexpr auto fAcceleration = 6.f;
-constexpr auto fAirAcceleration = 10.f;
+constexpr auto fAirAcceleration = 1.f;
 constexpr auto fStopSpeed = 8.f;
-constexpr auto fAirSpeed = .1f;
+constexpr auto fAirSpeed = 1.f;
 }
 
 static void ApplyFriction(
@@ -43,7 +43,8 @@ static void ApplyFriction(
 	float deltaTime)
 {
 	const auto speed = ((NiVector3&)*velocity).Length();
-	const auto friction = ini::fFriction * std::max(speed, ini::fStopSpeed) * deltaTime;
+	const auto scaleSpeed = std::max(speed, ini::fStopSpeed);
+	const auto friction = ini::fFriction * scaleSpeed * move.groundNormal.z * deltaTime;
 
 	if (friction >= speed)
 		*velocity = AlignedVector4(0, 0, 0, 0);
@@ -62,12 +63,34 @@ static void ApplyAcceleration(
 	const auto inAir = state == kState_InAir;
 	const auto speed = ((NiVector3&)*velocity).DotProduct(moveVector);
 	const auto maxSpeed = inAir ? moveLength * ini::fAirSpeed : moveLength;
+	const auto speedCap = std::max(maxSpeed, ((NiVector3&)*velocity).Length());
 
-	if (speed < maxSpeed) {
-		const auto accelMultiplier = inAir ? ini::fAirAcceleration : ini::fAcceleration;
-		const auto accel = accelMultiplier * moveLength * deltaTime;
-		*velocity += moveVector * std::min(accel, maxSpeed - speed);
-	}
+	if (speed >= maxSpeed)
+		return;
+
+	const auto accelMultiplier = inAir ? ini::fAirAcceleration : ini::fAcceleration;
+	const auto accel = accelMultiplier * moveLength * move.groundNormal.z * deltaTime;
+	*velocity += moveVector * std::min(accel, maxSpeed - speed);
+
+	if (const auto newLength = ((NiVector3&)*velocity).Length(); newLength > speedCap)
+		*velocity *= speedCap / newLength;
+}
+
+static AlignedVector4 GetMoveVector(const CharacterMoveParams &move)
+{
+	const auto input = move.input;
+	const auto &forward = move.forward;
+	const auto &up = move.up;
+	const auto right = AlignedVector4(((NiVector3&)forward).CrossProduct(up));
+	const auto moveVectorRaw = forward * -input.x + right * input.y + up * input.z;
+	const auto moveVector = NiVector3(moveVectorRaw).Normalize();
+	const auto normal = move.groundNormal;
+
+	if (normal.z <= 1e-4)
+		return {moveVector};
+
+	const auto dot = moveVector.DotProduct(normal);
+	return {NiVector3(moveVector.x, moveVector.y, -dot / normal.z).Normalize()};
 }
 
 static void UpdateVelocity(
@@ -84,11 +107,8 @@ static void UpdateVelocity(
 	if (moveLength < 1e-4f)
 		return;
 
-	const auto input = AlignedVector4(move.input * (1.f / moveLength));
-	const auto &forward = move.forward;
-	const auto &up = move.up;
-	const auto right = AlignedVector4(((NiVector3&)forward).CrossProduct(up));
-	const auto moveVector = forward * -input.x + right * input.y + up * input.z;
+	const auto moveVector = GetMoveVector(move);
+
 	ApplyAcceleration(move, velocity, state, moveVector, moveLength, deltaTime);
 }
 
