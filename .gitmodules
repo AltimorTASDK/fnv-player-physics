@@ -1,0 +1,3 @@
+[submodule "lib/JIP-LN-NVSE"]
+	path = lib/JIP-LN-NVSE
+	url = https://github.com/jazzisparis/JIP-LN-NVSE.git

@@ -1,0 +1,94 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
+      <Extensions>cpp;c;cc;cxx;c++;cppm;ixx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    </Filter>
+    <Filter Include="Header Files">
+      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
+      <Extensions>h;hh;hpp;hxx;h++;hm;inl;inc;ipp;xsd</Extensions>
+    </Filter>
+    <Filter Include="Resource Files">
+      <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
+      <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
+    </Filter>
+    <Filter Include="Source Files\internal">
+      <UniqueIdentifier>{bf74b92c-3e67-401f-89a9-841cce72b44a}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\nvse">
+      <UniqueIdentifier>{35735aa3-12cc-4917-90e0-861b76cdcfa7}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\lib\JIP-LN-NVSE\internal\containers.cpp">
+      <Filter>Source Files\internal</Filter>
+    </ClCompile>
+    <ClCompile Include="..\lib\JIP-LN-NVSE\internal\dinput.cpp">
+      <Filter>Source Files\internal</Filter>
+    </ClCompile>
+    <ClCompile Include="..\lib\JIP-LN-NVSE\internal\havok.cpp">
+      <Filter>Source Files\internal</Filter>
+    </ClCompile>
+    <ClCompile Include="..\lib\JIP-LN-NVSE\internal\jip_core.cpp">
+      <Filter>Source Files\internal</Filter>
+    </ClCompile>
+    <ClCompile Include="..\lib\JIP-LN-NVSE\internal\memory_pool.cpp">
+      <Filter>Source Files\internal</Filter>
+    </ClCompile>
+    <ClCompile Include="..\lib\JIP-LN-NVSE\internal\netimmerse.cpp">
+      <Filter>Source Files\internal</Filter>
+    </ClCompile>
+    <ClCompile Include="..\lib\JIP-LN-NVSE\internal\Ni_types.cpp">
+      <Filter>Source Files\internal</Filter>
+    </ClCompile>
+    <ClCompile Include="..\lib\JIP-LN-NVSE\internal\utility.cpp">
+      <Filter>Source Files\internal</Filter>
+    </ClCompile>
+    <ClCompile Include="..\lib\JIP-LN-NVSE\internal\xinput.cpp">
+      <Filter>Source Files\internal</Filter>
+    </ClCompile>
+    <ClCompile Include="..\lib\JIP-LN-NVSE\nvse\GameAPI.cpp">
+      <Filter>Source Files\nvse</Filter>
+    </ClCompile>
+    <ClCompile Include="..\lib\JIP-LN-NVSE\nvse\GameBSExtraData.cpp">
+      <Filter>Source Files\nvse</Filter>
+    </ClCompile>
+    <ClCompile Include="..\lib\JIP-LN-NVSE\nvse\GameData.cpp">
+      <Filter>Source Files\nvse</Filter>
+    </ClCompile>
+    <ClCompile Include="..\lib\JIP-LN-NVSE\nvse\GameExtraData.cpp">
+      <Filter>Source Files\nvse</Filter>
+    </ClCompile>
+    <ClCompile Include="..\lib\JIP-LN-NVSE\nvse\GameForms.cpp">
+      <Filter>Source Files\nvse</Filter>
+    </ClCompile>
+    <ClCompile Include="..\lib\JIP-LN-NVSE\nvse\GameObjects.cpp">
+      <Filter>Source Files\nvse</Filter>
+    </ClCompile>
+    <ClCompile Include="..\lib\JIP-LN-NVSE\nvse\GameRTTI.cpp">
+      <Filter>Source Files\nvse</Filter>
+    </ClCompile>
+    <ClCompile Include="..\lib\JIP-LN-NVSE\nvse\GameScript.cpp">
+      <Filter>Source Files\nvse</Filter>
+    </ClCompile>
+    <ClCompile Include="..\lib\JIP-LN-NVSE\nvse\GameSettings.cpp">
+      <Filter>Source Files\nvse</Filter>
+    </ClCompile>
+    <ClCompile Include="..\lib\JIP-LN-NVSE\nvse\GameSound.cpp">
+      <Filter>Source Files\nvse</Filter>
+    </ClCompile>
+    <ClCompile Include="..\lib\JIP-LN-NVSE\nvse\GameTiles.cpp">
+      <Filter>Source Files\nvse</Filter>
+    </ClCompile>
+    <ClCompile Include="..\lib\JIP-LN-NVSE\nvse\GameTypes.cpp">
+      <Filter>Source Files\nvse</Filter>
+    </ClCompile>
+    <ClCompile Include="..\lib\JIP-LN-NVSE\nvse\GameUI.cpp">
+      <Filter>Source Files\nvse</Filter>
+    </ClCompile>
+    <ClCompile Include="extra.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+  </ItemGroup>
+</Project>
