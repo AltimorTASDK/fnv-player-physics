@@ -10,6 +10,21 @@
       <Platform>Win32</Platform>
     </ProjectConfiguration>
   </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="src\main.cpp" />
+    <ClCompile Include="src\util\hooks.cpp" />
+    <ClCompile Include="src\util\memory.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="src\util\hooks.h" />
+    <ClInclude Include="src\util\matrix.h" />
+    <ClInclude Include="src\util\memory.h" />
+    <ClInclude Include="src\util\meta.h" />
+    <ClInclude Include="src\util\operators.h" />
+    <ClInclude Include="src\util\platform.h" />
+    <ClInclude Include="src\util\preprocessor.h" />
+    <ClInclude Include="src\util\vector.h" />
+  </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>17.0</VCProjectVersion>
     <Keyword>Win32Proj</Keyword>
@@ -43,10 +58,19 @@
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
-    <IncludePath>$(SolutionDir)/lib/JIP-LN-NVSE;$(IncludePath)</IncludePath>
+    <IncludePath>$(SolutionDir)/src;$(SolutionDir)/lib/JIP-LN-NVSE;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
-    <IncludePath>$(SolutionDir)/lib/JIP-LN-NVSE;$(IncludePath)</IncludePath>
+    <IncludePath>$(SolutionDir)/src;$(SolutionDir)/lib/JIP-LN-NVSE;$(IncludePath)</IncludePath>
+  </PropertyGroup>
+  <PropertyGroup Label="Vcpkg">
+    <VcpkgEnableManifest>true</VcpkgEnableManifest>
+  </PropertyGroup>
+  <PropertyGroup Label="Vcpkg" Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <VcpkgUseStatic>true</VcpkgUseStatic>
+  </PropertyGroup>
+  <PropertyGroup Label="Vcpkg" Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <VcpkgUseStatic>true</VcpkgUseStatic>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -63,6 +87,9 @@
       <AdditionalDependencies>$(SolutionDir)$(Configuration)\jip-nvse.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <OptimizeReferences>true</OptimizeReferences>
     </Link>
+    <PostBuildEvent>
+      <Command>cp '$(TargetPath)' 'D:\Games\Steam\steamapps\common\Fallout New Vegas\Data\NVSE\Plugins'</Command>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <ClCompile>
@@ -87,9 +114,6 @@
       <Command>cp '$(TargetPath)' 'D:\Games\Steam\steamapps\common\Fallout New Vegas\Data\NVSE\Plugins'</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
-  <ItemGroup>
-    <ClCompile Include="main.cpp" />
-  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>

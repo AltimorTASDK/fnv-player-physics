@@ -3,17 +3,6 @@
 
 using enum hkpCharacterState::StateType;
 
-struct IniPrefSetting {
-	void **vtable;
-	float value;
-	const char *name;
-
-	IniPrefSetting(const char *name, float value)
-	{
-		ThisCall(0x4DE370, this, name, value);
-	}
-};
-
 struct CharacterMoveParams {
 	// this struct alignment pisses me off
 	float multiplier;
@@ -27,9 +16,6 @@ struct CharacterMoveParams {
 };
 
 namespace ini {
-//auto fAcceleration = IniPrefSetting("fAcceleration:Movement", 5.f);
-//auto fFriction = IniPrefSetting("fFriction:Movement", 5.f);
-//auto fStopSpeed = IniPrefSetting("fStopSpeed:Movement", .3f);
 constexpr auto fFriction = 5.f;
 constexpr auto fAcceleration = 6.f;
 constexpr auto fAirAcceleration = 1.f;
@@ -154,9 +140,9 @@ static void patch_call_rel32(const uintptr_t addr, const void *dest)
 extern "C" __declspec(dllexport) bool NVSEPlugin_Query(const NVSEInterface *nvse, PluginInfo *info)
 {
 	info->infoVersion = PluginInfo::kInfoVersion;
-	info->name = "Viewmodel Adjustment";
-	info->version = 2;
-	return true;
+	info->name = "Player Physics";
+	info->version = 1;
+	return !nvse->isEditor;
 }
 
 extern "C" __declspec(dllexport) bool NVSEPlugin_Load(NVSEInterface *nvse)
