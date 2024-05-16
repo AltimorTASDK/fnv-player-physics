@@ -178,7 +178,21 @@ static void __fastcall hook_bhkCharacterStateJumping_UpdateVelocity(
 		// Must repress jump input
 		g_player.usedJumpInput = true;
 	}
+	// Additive jumps
+	const auto startZ = charCtrl->velocity.z;
 	ThisCall(HookGetOriginal(), state, charCtrl);
+	if (startZ > 0.f)
+		charCtrl->velocity.z += startZ;
+}
+
+static float __fastcall hook_bhkCharacterController_GetFallDistance(
+	bhkCharacterController *charCtrl)
+{
+	// Prevent fake midair landing
+	if (ShouldUsePhysics(charCtrl))
+		return 1.f;
+
+	return ThisCall<float>(HookGetOriginal(), charCtrl);
 }
 
 extern "C" __declspec(dllexport) bool NVSEPlugin_Query(const NVSEInterface *nvse, PluginInfo *info)
@@ -196,5 +210,6 @@ extern "C" __declspec(dllexport) bool NVSEPlugin_Load(NVSEInterface *nvse)
 	patch_call_rel32(0xCD4A2A, hook_MoveCharacter_wrapper);
 	patch_call_rel32(0x94215F, hook_CheckJumpButton);
 	patch_vtable(0x10CB398, 8, hook_bhkCharacterStateJumping_UpdateVelocity);
+	patch_call_rel32(0xCD400B, hook_bhkCharacterController_GetFallDistance);
 	return true;
 }
