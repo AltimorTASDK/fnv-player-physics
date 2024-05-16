@@ -104,7 +104,7 @@ static void UpdateVelocity(
 	}
 }
 
-static bool shouldUsePhysics(bhkCharacterController *charCtrl)
+static bool ShouldUsePhysics(bhkCharacterController *charCtrl)
 {
 	return charCtrl == PlayerCharacter::GetSingleton()->GetCharacterController()
 	    && VATSCameraData::Get()->mode == 0;
@@ -115,7 +115,7 @@ static void hook_MoveCharacter(
 	CharacterMoveParams *move,
 	AlignedVector4 *velocity)
 {
-	if (!shouldUsePhysics(charCtrl)) {
+	if (!ShouldUsePhysics(charCtrl)) {
 		// call original
 		CdeclCall(HookGetOriginal(), move, velocity);
 		return;
@@ -159,11 +159,25 @@ static int __fastcall hook_CheckJumpButton(
 	return ThisCall<int>(HookGetOriginal(), input, key, kControlState_Held);
 }
 
+static bool WillJump(bhkCharacterController *charCtrl)
+{
+	// Check that we won't exit jump state early without setting velocity
+	switch (charCtrl->wantState) {
+	case kState_OnGround:
+	case kState_Climbing:
+		return false;
+	default:
+		return true;
+	}
+}
+
 static void __fastcall hook_bhkCharacterStateJumping_UpdateVelocity(
 	bhkCharacterStateJumping *state, int, bhkCharacterController *charCtrl)
 {
-	// Must repress jump input
-	g_player.usedJumpInput = true;
+	if (ShouldUsePhysics(charCtrl) && WillJump(charCtrl)) {
+		// Must repress jump input
+		g_player.usedJumpInput = true;
+	}
 	ThisCall(HookGetOriginal(), state, charCtrl);
 }
 
