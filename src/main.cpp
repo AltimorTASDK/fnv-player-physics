@@ -4,6 +4,11 @@
 
 using enum hkpCharacterState::StateType;
 
+enum ControlState {
+	kControlState_Held = 0,
+	kControlState_Pressed = 1
+};
+
 struct CharacterMoveParams {
 	// this struct alignment pisses me off
 	float multiplier;
@@ -23,6 +28,10 @@ constexpr auto fAirAcceleration = 1.f;
 constexpr auto fStopSpeed = 8.f;
 constexpr auto fAirSpeed = 1.f;
 }
+
+struct {
+	bool usedJumpInput = true;
+} g_player;
 
 static void ApplyFriction(
 	const CharacterMoveParams &move,
@@ -136,6 +145,28 @@ static __declspec(naked) void hook_MoveCharacter_wrapper()
 	}
 }
 
+static int __fastcall hook_CheckJumpButton(
+	OSInputGlobals *input, int, int key, ControlState state)
+{
+	if (ThisCall<int>(HookGetOriginal(), input, key, kControlState_Pressed)) {
+		// Fresh input
+		g_player.usedJumpInput = false;
+		return true;
+	} else if (g_player.usedJumpInput) {
+		// Already used this input to jump
+		return false;
+	}
+	return ThisCall<int>(HookGetOriginal(), input, key, kControlState_Held);
+}
+
+static void __fastcall hook_bhkCharacterStateJumping_UpdateVelocity(
+	bhkCharacterStateJumping *state, int, bhkCharacterController *charCtrl)
+{
+	// Must repress jump input
+	g_player.usedJumpInput = true;
+	ThisCall(HookGetOriginal(), state, charCtrl);
+}
+
 extern "C" __declspec(dllexport) bool NVSEPlugin_Query(const NVSEInterface *nvse, PluginInfo *info)
 {
 	info->infoVersion = PluginInfo::kInfoVersion;
@@ -149,5 +180,7 @@ extern "C" __declspec(dllexport) bool NVSEPlugin_Load(NVSEInterface *nvse)
 	patch_call_rel32(0xCD414D, hook_MoveCharacter_wrapper);
 	patch_call_rel32(0xCD45D0, hook_MoveCharacter_wrapper);
 	patch_call_rel32(0xCD4A2A, hook_MoveCharacter_wrapper);
+	patch_call_rel32(0x94215F, hook_CheckJumpButton);
+	patch_vtable(0x10CB398, 8, hook_bhkCharacterStateJumping_UpdateVelocity);
 	return true;
 }

@@ -25,6 +25,13 @@ void patch_code(uintptr_t target, auto &&...args)
 	patch_code((void*)target, std::forward<decltype(args)>(args)...);
 }
 
+void patch_vtable(void *target, size_t index, const void *hook);
+
+void patch_vtable(uintptr_t target, auto &&...args)
+{
+	patch_vtable((void*)target, std::forward<decltype(args)>(args)...);
+}
+
 inline int32_t make_rel32(auto from, auto to, size_t instruction_size = 5)
 {
 	return (int32_t)((std::byte*)to - ((std::byte*)from + instruction_size));
