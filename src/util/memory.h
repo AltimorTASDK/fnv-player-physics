@@ -18,6 +18,11 @@ void patch_code(void *target, const char (&patch)[N])
 	patch_code(target, patch, N - 1);
 }
 
+void patch_code(uintptr_t target, auto &&...args)
+{
+	patch_code((void*)target, std::forward<decltype(args)>(args)...);
+}
+
 inline int32_t make_rel32(const void *from, const void *to, size_t instruction_size)
 {
 	return (int32_t)((std::byte*)to - ((std::byte*)from + instruction_size));

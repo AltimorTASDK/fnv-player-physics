@@ -1,3 +1,4 @@
+#include "util/memory.h"
 #include <cstddef>
 #include <Windows.h>
 
@@ -62,6 +63,22 @@ static void ApplyAcceleration(
 		*velocity *= speedCap / newLength;
 }
 
+static void AlignVelocityToGround(const CharacterMoveParams &move, AlignedVector4 *velocity)
+{
+	if (velocity->x * velocity->y + velocity->y * velocity->y <= 1e-4f)
+		return;
+
+	const auto &normal = move.groundNormal;
+	const auto speed = ((NiVector3&)*velocity).Length();
+
+	if (normal.z <= 1e-4f || normal.z >= 1.f - 1e-4f)
+		velocity->z = 0.f;
+	else
+		velocity->z = -(velocity->x * normal.x + velocity->y * normal.y) / normal.z;
+
+	*velocity *= speed / ((NiVector3&)*velocity).Length();
+}
+
 static AlignedVector4 GetMoveVector(const CharacterMoveParams &move)
 {
 	const auto &input = move.input;
@@ -72,7 +89,7 @@ static AlignedVector4 GetMoveVector(const CharacterMoveParams &move)
 	const auto moveVector = NiVector3(moveVectorRaw).Normalize();
 	const auto &normal = move.groundNormal;
 
-	if (normal.z <= 1e-4)
+	if (normal.z <= 1e-4f || normal.z >= 1.f - 1e-4f)
 		return {moveVector};
 
 	const auto dot = moveVector.DotProduct(normal);
@@ -85,6 +102,9 @@ static void UpdateVelocity(
 	UInt32 state,
 	float deltaTime)
 {
+	//if (state == kState_OnGround)
+		//AlignVelocityToGround(move, velocity);
+
 	if (state != kState_InAir)
 		ApplyFriction(move, velocity, deltaTime);
 
@@ -102,21 +122,25 @@ static bool shouldUsePhysics(bhkCharacterController *charCtrl)
 
 static void hook_MoveCharacter(
 	bhkCharacterController *charCtrl,
-	const CharacterMoveParams &move,
+	CharacterMoveParams *move,
 	AlignedVector4 *velocity)
 {
 	if (!shouldUsePhysics(charCtrl)) {
 		// call original
-		CdeclCall(0xD6AEF0, &move, velocity);
+		CdeclCall(0xD6AEF0, move, velocity);
 		return;
 	}
 
 	const auto state = charCtrl->chrContext.hkState;
 	const auto deltaTime = charCtrl->stepInfo.deltaTime;
 
-	*velocity -= move.surfaceVelocity.PS();
-	UpdateVelocity(move, velocity, state, deltaTime);
-	*velocity += move.surfaceVelocity.PS();
+	*velocity -= move->surfaceVelocity.PS();
+	UpdateVelocity(*move, velocity, state, deltaTime);
+	*velocity += move->surfaceVelocity.PS();
+
+	// Prevent ground state from restoring Z velocity
+	if (state == kState_OnGround)
+		move->velocity.z = velocity->z;
 }
 
 static __declspec(naked) void hook_MoveCharacter_wrapper()
@@ -136,7 +160,7 @@ static void patch_call_rel32(const uintptr_t addr, const void *dest)
 	DWORD old_protect;
 	VirtualProtect((void*)addr, 5, PAGE_EXECUTE_READWRITE, &old_protect);
 	*(char*)addr = '\xE8'; // CALL opcode
-	*(std::byte**)(addr + 1) = (std::byte*)dest - addr - 5;
+	*(int32_t*)(addr + 1) = make_rel32((void*)addr, dest, 5);
 	VirtualProtect((void*)addr, 5, old_protect, &old_protect);
 }
 
