@@ -98,12 +98,18 @@ static void UpdateVelocity(
 	ApplyAcceleration(move, velocity, state, moveVector, moveLength, deltaTime);
 }
 
+static bool shouldUsePhysics(bhkCharacterController *charCtrl)
+{
+	return charCtrl == PlayerCharacter::GetSingleton()->GetCharacterController()
+	    && VATSCameraData::Get()->mode == 0;
+}
+
 static void hook_MoveCharacter(
 	bhkCharacterController *charCtrl,
 	const CharacterMoveParams &move,
 	AlignedVector4 *velocity)
 {
-	if (charCtrl != PlayerCharacter::GetSingleton()->GetCharacterController()) {
+	if (!shouldUsePhysics(charCtrl)) {
 		// call original
 		CdeclCall(0xD6AEF0, &move, velocity);
 		return;
@@ -111,6 +117,7 @@ static void hook_MoveCharacter(
 
 	const auto state = charCtrl->chrContext.hkState;
 	const auto deltaTime = charCtrl->stepInfo.deltaTime;
+
 	*velocity -= move.surfaceVelocity.PS();
 	UpdateVelocity(move, velocity, state, deltaTime);
 	*velocity += move.surfaceVelocity.PS();
