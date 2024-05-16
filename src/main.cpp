@@ -64,7 +64,7 @@ static void ApplyAcceleration(
 
 static AlignedVector4 GetMoveVector(const CharacterMoveParams &move)
 {
-	const auto input = move.input;
+	const auto &input = move.input;
 	const auto &forward = move.forward;
 	const auto &up = move.up;
 	const auto right = AlignedVector4(((NiVector3&)forward).CrossProduct(up));
