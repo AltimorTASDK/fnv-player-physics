@@ -108,7 +108,7 @@ static void hook_MoveCharacter(
 {
 	if (!shouldUsePhysics(charCtrl)) {
 		// call original
-		CdeclCall(0xD6AEF0, move, velocity);
+		CdeclCall(HookGetOriginal(), move, velocity);
 		return;
 	}
 
@@ -134,15 +134,6 @@ static __declspec(naked) void hook_MoveCharacter_wrapper()
 		add esp, 12
 		ret
 	}
-}
-
-static void patch_call_rel32(const uintptr_t addr, const void *dest)
-{
-	DWORD old_protect;
-	VirtualProtect((void*)addr, 5, PAGE_EXECUTE_READWRITE, &old_protect);
-	*(char*)addr = '\xE8'; // CALL opcode
-	*(int32_t*)(addr + 1) = make_rel32((void*)addr, dest, 5);
-	VirtualProtect((void*)addr, 5, old_protect, &old_protect);
 }
 
 extern "C" __declspec(dllexport) bool NVSEPlugin_Query(const NVSEInterface *nvse, PluginInfo *info)

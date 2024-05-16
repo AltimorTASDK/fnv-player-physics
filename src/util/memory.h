@@ -1,10 +1,12 @@
 #pragma once
 
+#include "util/platform.h"
+#include <bit>
 #include <cstddef>
 #include <cstdint>
 #include <utility>
 
-struct rwx_byte {
+struct alignas(std::byte) rwx_byte {
 	std::byte value;
 	void *operator new[](size_t size);
 	void operator delete[](void *ptr);
@@ -23,9 +25,37 @@ void patch_code(uintptr_t target, auto &&...args)
 	patch_code((void*)target, std::forward<decltype(args)>(args)...);
 }
 
-inline int32_t make_rel32(const void *from, const void *to, size_t instruction_size)
+inline int32_t make_rel32(auto from, auto to, size_t instruction_size = 5)
 {
 	return (int32_t)((std::byte*)to - ((std::byte*)from + instruction_size));
+}
+
+inline void *read_rel32(auto address, size_t instruction_size = 5)
+{
+	const auto rel32 = *(int32_t*)((std::byte*)address + 1);
+	return (std::byte*)address + rel32 + instruction_size;
+}
+
+namespace detail {
+PACKED (struct op8_imm32 {
+	uint8_t op;
+	int32_t imm;
+});
+}
+
+inline void write_call(void *address, const void *dest)
+{
+	*(detail::op8_imm32*)address = {0xE8, make_rel32(address, dest)};
+}
+
+inline void write_jmp(void *address, const void *dest)
+{
+	*(detail::op8_imm32*)address = {0xE9, make_rel32(address, dest)};
+}
+
+inline void write_push(void *address, auto value)
+{
+	*(detail::op8_imm32*)address = {0x68, std::bit_cast<int32_t>(value)};
 }
 
 namespace detail {
@@ -61,3 +91,14 @@ inline auto call_virtual(auto *object, auto &&...args)
 	return detail::call_virtual_impl<Index, T>::call(
 		object, std::forward<decltype(args)>(args)...);
 }
+
+namespace detail::hook {
+inline thread_local void *original;
+}
+
+inline uintptr_t HookGetOriginal()
+{
+	return (uintptr_t)detail::hook::original;
+}
+
+void patch_call_rel32(const uintptr_t address, const void *hook);
