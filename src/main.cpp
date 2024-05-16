@@ -70,7 +70,7 @@ static AlignedVector4 GetMoveVector(const CharacterMoveParams &move)
 	const auto right = AlignedVector4(((NiVector3&)forward).CrossProduct(up));
 	const auto moveVectorRaw = forward * -input.x + right * input.y + up * input.z;
 	const auto moveVector = NiVector3(moveVectorRaw).Normalize();
-	const auto normal = move.groundNormal;
+	const auto &normal = move.groundNormal;
 
 	if (normal.z <= 1e-4)
 		return {moveVector};
