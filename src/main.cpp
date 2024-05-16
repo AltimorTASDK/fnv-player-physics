@@ -88,14 +88,10 @@ static void UpdateVelocity(
 	if (state != kState_InAir)
 		ApplyFriction(move, velocity, deltaTime);
 
-	const auto moveLength = ((NiVector3&)move.input).Length();
-
-	if (moveLength < 1e-4f)
-		return;
-
-	const auto moveVector = GetMoveVector(move);
-
-	ApplyAcceleration(move, velocity, state, moveVector, moveLength, deltaTime);
+	if (const auto moveLength = ((NiVector3&)move.input).Length(); moveLength >= 1e-4f) {
+		const auto moveVector = GetMoveVector(move);
+		ApplyAcceleration(move, velocity, state, moveVector, moveLength, deltaTime);
+	}
 }
 
 static bool shouldUsePhysics(bhkCharacterController *charCtrl)
