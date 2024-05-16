@@ -63,22 +63,6 @@ static void ApplyAcceleration(
 		*velocity *= speedCap / newLength;
 }
 
-static void AlignVelocityToGround(const CharacterMoveParams &move, AlignedVector4 *velocity)
-{
-	if (velocity->x * velocity->y + velocity->y * velocity->y <= 1e-4f)
-		return;
-
-	const auto &normal = move.groundNormal;
-	const auto speed = ((NiVector3&)*velocity).Length();
-
-	if (normal.z <= 1e-4f || normal.z >= 1.f - 1e-4f)
-		velocity->z = 0.f;
-	else
-		velocity->z = -(velocity->x * normal.x + velocity->y * normal.y) / normal.z;
-
-	*velocity *= speed / ((NiVector3&)*velocity).Length();
-}
-
 static AlignedVector4 GetMoveVector(const CharacterMoveParams &move)
 {
 	const auto &input = move.input;
@@ -102,9 +86,6 @@ static void UpdateVelocity(
 	UInt32 state,
 	float deltaTime)
 {
-	//if (state == kState_OnGround)
-		//AlignVelocityToGround(move, velocity);
-
 	if (state != kState_InAir)
 		ApplyFriction(move, velocity, deltaTime);
 
