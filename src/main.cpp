@@ -25,8 +25,8 @@ namespace ini {
 constexpr auto fFriction = 5.f;
 constexpr auto fAcceleration = 6.f;
 constexpr auto fAirAcceleration = 1.f;
-constexpr auto fMinimumScaleSpeed = 12.f;
-constexpr auto fStopSpeed = 8.f;
+constexpr auto fMinimumScaleSpeed = 25.f;
+constexpr auto fStopSpeed = 16.f;
 constexpr auto fAirSpeed = 1.f;
 constexpr auto fGravityMult = 1.5f;
 }
@@ -249,5 +249,7 @@ extern "C" __declspec(dllexport) bool NVSEPlugin_Load(NVSEInterface *nvse)
 	patch_call_rel32(0xCD400B, hook_bhkCharacterController_GetFallDistance);
 	// Zero out bhkCharacterStateOnGround::clearZVelocityOnFall
 	patch_code(0xCD47F1, "\xC6\x40\x08\x00\xC3");
+	// Don't zero Z velocity with no input on ground
+	patch_code(0xC7386E, "\x90\x90\x90\x90\x90\x90");
 	return true;
 }
