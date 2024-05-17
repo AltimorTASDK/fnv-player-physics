@@ -33,7 +33,6 @@
     <ClCompile Include="..\lib\JIP-LN-NVSE\nvse\GameTiles.cpp" />
     <ClCompile Include="..\lib\JIP-LN-NVSE\nvse\GameTypes.cpp" />
     <ClCompile Include="..\lib\JIP-LN-NVSE\nvse\GameUI.cpp" />
-    <ClCompile Include="extra.cpp" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>17.0</VCProjectVersion>

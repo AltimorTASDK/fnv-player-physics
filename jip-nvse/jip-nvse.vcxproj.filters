@@ -87,8 +87,5 @@
     <ClCompile Include="..\lib\JIP-LN-NVSE\nvse\GameUI.cpp">
       <Filter>Source Files\nvse</Filter>
     </ClCompile>
-    <ClCompile Include="extra.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
   </ItemGroup>
 </Project>

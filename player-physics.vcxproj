@@ -11,6 +11,7 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="src\extra.cpp" />
     <ClCompile Include="src\main.cpp" />
     <ClCompile Include="src\util\hooks.cpp" />
     <ClCompile Include="src\util\memory.cpp" />
@@ -62,6 +63,7 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <IncludePath>$(SolutionDir)/src;$(SolutionDir)/lib/JIP-LN-NVSE;$(IncludePath)</IncludePath>
+    <TargetName>PlayerPhysics</TargetName>
   </PropertyGroup>
   <PropertyGroup Label="Vcpkg">
     <VcpkgEnableManifest>true</VcpkgEnableManifest>
