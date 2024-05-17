@@ -25,8 +25,10 @@ namespace ini {
 constexpr auto fFriction = 5.f;
 constexpr auto fAcceleration = 6.f;
 constexpr auto fAirAcceleration = 1.f;
+constexpr auto fMinimumScaleSpeed = 12.f;
 constexpr auto fStopSpeed = 8.f;
 constexpr auto fAirSpeed = 1.f;
+constexpr auto fGravityMult = 1.5f;
 }
 
 struct {
@@ -65,7 +67,8 @@ static void ApplyAcceleration(
 		return;
 
 	const auto accelMultiplier = inAir ? ini::fAirAcceleration : ini::fAcceleration;
-	const auto accel = accelMultiplier * moveLength * move.groundNormal.z * deltaTime;
+	const auto scaleSpeed = std::max(moveLength, ini::fMinimumScaleSpeed);
+	const auto accel = accelMultiplier * scaleSpeed * move.groundNormal.z * deltaTime;
 	*velocity += moveVector * std::min(accel, maxSpeed - speed);
 
 	if (const auto newLength = ((NiVector3&)*velocity).Length(); newLength > speedCap)
@@ -104,10 +107,14 @@ static void UpdateVelocity(
 	}
 }
 
+static bool IsPlayerController(bhkCharacterController *charCtrl)
+{
+	return charCtrl == PlayerCharacter::GetSingleton()->GetCharacterController();
+}
+
 static bool ShouldUsePhysics(bhkCharacterController *charCtrl)
 {
-	return charCtrl == PlayerCharacter::GetSingleton()->GetCharacterController()
-	    && VATSCameraData::Get()->mode == 0;
+	return IsPlayerController(charCtrl) && VATSCameraData::Get()->mode == 0;
 }
 
 static void hook_MoveCharacter(
@@ -187,6 +194,31 @@ static void __fastcall hook_bhkCharacterStateJumping_UpdateVelocity(
 		charCtrl->velocity.z += startZ;
 }
 
+static bool WillFall(bhkCharacterController *charCtrl)
+{
+	return !(charCtrl->chrListener.flags & bhkCharacterListener::kHasSupport)
+	    && !charCtrl->bFakeSupport;
+}
+
+static void __fastcall hook_bhkCharacterStateOnGround_UpdateVelocity(
+	bhkCharacterStateOnGround *state, int, bhkCharacterController *charCtrl)
+{
+	// Preserve downward velocity when walking off things
+	if (WillFall(charCtrl) && (!ShouldUsePhysics(charCtrl) || charCtrl->velocity.z > 0.f))
+		charCtrl->velocity.z = 0.f;
+
+	ThisCall(HookGetOriginal(), state, charCtrl);
+}
+
+static void __fastcall hook_bhkCharacterController_UpdateCharacterState(
+	bhkCharacterController *charCtrl, int, const void *params)
+{
+	if (IsPlayerController(charCtrl))
+		charCtrl->gravityMult = ini::fGravityMult;
+
+	ThisCall(HookGetOriginal(), charCtrl, params);
+}
+
 static float __fastcall hook_bhkCharacterController_GetFallDistance(
 	bhkCharacterController *charCtrl)
 {
@@ -212,6 +244,10 @@ extern "C" __declspec(dllexport) bool NVSEPlugin_Load(NVSEInterface *nvse)
 	patch_call_rel32(0xCD4A2A, hook_MoveCharacter_wrapper);
 	patch_call_rel32(0x94215F, hook_CheckJumpButton);
 	patch_vtable(kVtbl_bhkCharacterStateJumping, 8, hook_bhkCharacterStateJumping_UpdateVelocity);
+	patch_vtable(kVtbl_bhkCharacterStateOnGround, 8, hook_bhkCharacterStateOnGround_UpdateVelocity);
+	patch_vtable(kVtbl_bhkCharacterController, 50, hook_bhkCharacterController_UpdateCharacterState);
 	patch_call_rel32(0xCD400B, hook_bhkCharacterController_GetFallDistance);
+	// Zero out bhkCharacterStateOnGround::clearZVelocityOnFall
+	patch_code(0xCD47F1, "\xC6\x40\x08\x00\xC3");
 	return true;
 }
