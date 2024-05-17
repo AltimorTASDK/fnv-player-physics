@@ -109,3 +109,5 @@ inline uintptr_t HookGetOriginal()
 }
 
 void patch_call_rel32(const uintptr_t address, const void *hook);
+
+void patch_jmp_rel32(const uintptr_t address, const void *hook);

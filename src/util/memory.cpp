@@ -53,20 +53,24 @@ void patch_code(void *target, const void *patch, size_t size)
 void patch_vtable(void *target, size_t index, const void *hook)
 {
 	auto **vtable = (const void**)target;
-	auto *trampoline = detail::hook::create_trampoline(hook, vtable[index]);
-
 	DWORD old_protect;
 	VirtualProtect(&vtable[index], sizeof(void*), PAGE_READWRITE, &old_protect);
-	vtable[index] = trampoline;
+	vtable[index] = detail::hook::create_trampoline(hook, vtable[index]);
 	VirtualProtect(&vtable[index], sizeof(void*), old_protect, &old_protect);
 }
 
 void patch_call_rel32(const uintptr_t address, const void *hook)
 {
-	auto *trampoline = detail::hook::create_trampoline(hook, read_rel32(address));
-
 	DWORD old_protect;
 	VirtualProtect((void*)address, 5, PAGE_EXECUTE_READWRITE, &old_protect);
-	write_call((void*)address, trampoline);
+	write_call((void*)address, detail::hook::create_trampoline(hook, read_rel32(address)));
+	VirtualProtect((void*)address, 5, old_protect, &old_protect);
+}
+
+void patch_jmp_rel32(const uintptr_t address, const void *hook)
+{
+	DWORD old_protect;
+	VirtualProtect((void*)address, 5, PAGE_EXECUTE_READWRITE, &old_protect);
+	write_call((void*)address, hook);
 	VirtualProtect((void*)address, 5, old_protect, &old_protect);
 }
