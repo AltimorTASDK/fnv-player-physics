@@ -346,7 +346,9 @@ extern "C" __declspec(dllexport) bool NVSEPlugin_Load(NVSEInterface *nvse)
 	patch_code(0xC7386E, "\x90\x90\x90\x90\x90\x90");
 	// Allow jumping while aiming
 	patch_code(0x9422AA, "\xEB");
-	// Use standard collision when not giving input
+	// Use standard ground collision when not giving input
 	patch_code(0xC72025, "\xEB");
+	// Don't factor speedPct into ground collisions
+	patch_code(0xC7203A, "\xEB");
 	return true;
 }
