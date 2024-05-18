@@ -30,11 +30,22 @@ constexpr auto fMaxAccelScaleSpeed = 60.f;
 constexpr auto fStopSpeed = 16.f;
 constexpr auto fAirSpeed = 1.f;
 constexpr auto fGravityMult = 2.f;
+constexpr auto fKnockbackScale = 10.f;
 }
 
 struct {
 	bool usedJumpInput = true;
 } g_player;
+
+static bool IsPlayerController(bhkCharacterController *charCtrl)
+{
+	return charCtrl == PlayerCharacter::GetSingleton()->GetCharacterController();
+}
+
+static bool ShouldUsePhysics(bhkCharacterController *charCtrl)
+{
+	return IsPlayerController(charCtrl) && VATSCameraData::Get()->mode == 0;
+}
 
 static void ApplyFriction(
 	const CharacterMoveParams &move,
@@ -109,14 +120,16 @@ static void UpdateVelocity(
 	}
 }
 
-static bool IsPlayerController(bhkCharacterController *charCtrl)
+static void ApplyThrowback(bhkCharacterController *charCtrl)
 {
-	return charCtrl == PlayerCharacter::GetSingleton()->GetCharacterController();
-}
+	if (charCtrl->throwbackTimer <= 0.f || !charCtrl->chrListener.ReceivesThrowback())
+		return;
 
-static bool ShouldUsePhysics(bhkCharacterController *charCtrl)
-{
-	return IsPlayerController(charCtrl) && VATSCameraData::Get()->mode == 0;
+	// Scale based on total distance moved in vanilla
+	const auto scale = charCtrl->throwbackTimer * charCtrl->throwbackTimer * .5f;
+	charCtrl->velocity += charCtrl->throwbackVelocity * (scale * ini::fKnockbackScale);
+	charCtrl->throwbackTimer = 0.f;
+	charCtrl->throwbackVelocity = AlignedVector4(0, 0, 0, 0);
 }
 
 static void hook_MoveCharacter(
@@ -135,6 +148,7 @@ static void hook_MoveCharacter(
 
 	*velocity -= move->surfaceVelocity.PS();
 	UpdateVelocity(*move, velocity, state, deltaTime);
+	ApplyThrowback(charCtrl);
 	*velocity += move->surfaceVelocity.PS();
 
 	// Prevent ground state from restoring Z velocity
@@ -231,6 +245,14 @@ static float __fastcall hook_bhkCharacterController_GetFallDistance(
 	return ThisCall<float>(HookGetOriginal(), charCtrl);
 }
 
+static void __fastcall hook_bhkCharacterController_UpdateThrowback(
+	bhkCharacterController *charCtrl)
+{
+	// Handle throwback ourselves
+	if (!ShouldUsePhysics(charCtrl))
+		ThisCall(HookGetOriginal(), charCtrl);
+}
+
 extern "C" __declspec(dllexport) bool NVSEPlugin_Query(const NVSEInterface *nvse, PluginInfo *info)
 {
 	info->infoVersion = PluginInfo::kInfoVersion;
@@ -249,11 +271,15 @@ extern "C" __declspec(dllexport) bool NVSEPlugin_Load(NVSEInterface *nvse)
 	patch_vtable(kVtbl_bhkCharacterStateOnGround, 8, hook_bhkCharacterStateOnGround_UpdateVelocity);
 	patch_vtable(kVtbl_bhkCharacterController, 50, hook_bhkCharacterController_UpdateCharacterState);
 	patch_call_rel32(0xCD400B, hook_bhkCharacterController_GetFallDistance);
+	patch_call_rel32(0xCD47AB, hook_bhkCharacterController_UpdateThrowback);
+	patch_call_rel32(0xCD4AA2, hook_bhkCharacterController_UpdateThrowback);
 	// Zero out bhkCharacterStateOnGround::clearZVelocityOnFall
 	patch_code(0xCD47F1, "\xC6\x40\x08\x00\xC3");
 	// Don't zero Z velocity with no input on ground
 	patch_code(0xC7386E, "\x90\x90\x90\x90\x90\x90");
 	// Allow jumping while aiming
 	patch_code(0x9422AA, "\xEB");
+	// Use standard collision when not giving input
+	patch_code(0xC72025, "\xEB");
 	return true;
 }
