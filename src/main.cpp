@@ -3,6 +3,9 @@
 #include <Windows.h>
 
 using enum hkpCharacterState::StateType;
+using enum ActorMover::MovementFlags;
+
+constexpr auto kHavokUnitScale = 1.f / 7.f;
 
 enum ControlState {
 	kControlState_Held = 0,
@@ -26,7 +29,6 @@ constexpr auto fFriction = 5.f;
 constexpr auto fAcceleration = 6.f;
 constexpr auto fAirAcceleration = 1.f;
 constexpr auto fMinAccelScaleSpeed = 25.f;
-constexpr auto fMaxAccelScaleSpeed = 60.f;
 constexpr auto fStopSpeed = 16.f;
 constexpr auto fAirSpeed = 1.f;
 constexpr auto fGravityMult = 2.f;
@@ -42,9 +44,25 @@ static bool IsPlayerController(bhkCharacterController *charCtrl)
 	return charCtrl == PlayerCharacter::GetSingleton()->GetCharacterController();
 }
 
+static bool IsMovementOverrideSequence(UInt16 sequence)
+{
+	return CdeclCall<bool>(0x5F2670, sequence);
+}
+
 static bool ShouldUsePhysics(bhkCharacterController *charCtrl)
 {
-	return IsPlayerController(charCtrl) && VATSCameraData::Get()->mode == 0;
+	if (!IsPlayerController(charCtrl))
+		return false;
+
+	if (VATSCameraData::Get()->mode != 0)
+		return false;
+
+	const auto *animData = PlayerCharacter::GetSingleton()->GetAnimData();
+
+	if (IsMovementOverrideSequence(animData->animGroupIDs[AnimData::kSequence_Weapon]))
+		return false;
+
+	return true;
 }
 
 static void ApplyFriction(
@@ -67,20 +85,19 @@ static void ApplyAcceleration(
 	AlignedVector4 *velocity,
 	UInt32 state,
 	const NiVector3 &moveVector,
-	float moveLength,
+	float baseSpeed,
 	float deltaTime)
 {
 	const auto inAir = state == kState_InAir;
 	const auto speed = ((NiVector3&)*velocity).DotProduct(moveVector);
-	const auto maxSpeed = inAir ? moveLength * ini::fAirSpeed : moveLength;
-	const auto speedCap = std::max(maxSpeed, ((NiVector3&)*velocity).Length());
+	const auto maxSpeed = inAir ? baseSpeed * ini::fAirSpeed : baseSpeed;
+	const auto speedCap = std::max(baseSpeed, ((NiVector3&)*velocity).Length());
 
 	if (speed >= maxSpeed)
 		return;
 
 	const auto accelMultiplier = inAir ? ini::fAirAcceleration : ini::fAcceleration;
-	const auto scaleSpeed = std::min(std::max(moveLength,
-		ini::fMinAccelScaleSpeed), ini::fMaxAccelScaleSpeed);
+	const auto scaleSpeed = std::max(baseSpeed, ini::fMinAccelScaleSpeed);
 	const auto accel = accelMultiplier * scaleSpeed * move.groundNormal.z * deltaTime;
 	*velocity += moveVector * std::min(accel, maxSpeed - speed);
 
@@ -88,9 +105,25 @@ static void ApplyAcceleration(
 		*velocity *= speedCap / newLength;
 }
 
-static AlignedVector4 GetMoveVector(const CharacterMoveParams &move)
+static AlignedVector4 GetInputVector(UInt32 moveFlags)
 {
-	const auto &input = move.input;
+	auto result = AlignedVector4(0, 0, 0, 0);
+
+	if (moveFlags & kMoveFlag_Forward)
+		result.x = 1.f;
+	else if (moveFlags & kMoveFlag_Backward)
+		result.x = -1.f;
+
+	if (moveFlags & kMoveFlag_Left)
+		result.y = -1.f;
+	else if (moveFlags & kMoveFlag_Right)
+		result.y = 1.f;
+
+	return result;
+}
+
+static AlignedVector4 GetMoveVector(const CharacterMoveParams &move, const AlignedVector4 &input)
+{
 	const auto &forward = move.forward;
 	const auto &up = move.up;
 	const auto right = AlignedVector4(((NiVector3&)forward).CrossProduct(up));
@@ -114,9 +147,17 @@ static void UpdateVelocity(
 	if (state != kState_InAir)
 		ApplyFriction(move, velocity, deltaTime);
 
-	if (const auto moveLength = ((NiVector3&)move.input).Length(); moveLength >= 1e-4f) {
-		const auto moveVector = GetMoveVector(move);
-		ApplyAcceleration(move, velocity, state, moveVector, moveLength, deltaTime);
+	constexpr auto kMoveMask =
+		kMoveFlag_Forward | kMoveFlag_Backward |
+		kMoveFlag_Left    | kMoveFlag_Right;
+
+	const auto *mover = (PlayerMover*)PlayerCharacter::GetSingleton()->actorMover;
+
+	if ((mover->pcMovementFlags & kMoveMask) != 0) {
+		const auto inputVector = GetInputVector(mover->pcMovementFlags);
+		const auto moveVector = GetMoveVector(move, inputVector);
+		const auto moveSpeed = mover->moveSpeed * kHavokUnitScale;
+		ApplyAcceleration(move, velocity, state, moveVector, moveSpeed, deltaTime);
 	}
 }
 
