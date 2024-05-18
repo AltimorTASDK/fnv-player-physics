@@ -71,6 +71,6 @@ void patch_jmp_rel32(const uintptr_t address, const void *hook)
 {
 	DWORD old_protect;
 	VirtualProtect((void*)address, 5, PAGE_EXECUTE_READWRITE, &old_protect);
-	write_call((void*)address, hook);
+	write_jmp((void*)address, hook);
 	VirtualProtect((void*)address, 5, old_protect, &old_protect);
 }

@@ -39,9 +39,14 @@ struct {
 	bool usedJumpInput = true;
 } g_player;
 
+static PlayerCharacter *GetPlayer()
+{
+	return PlayerCharacter::GetSingleton();
+}
+
 static bool IsPlayerController(bhkCharacterController *charCtrl)
 {
-	return charCtrl == PlayerCharacter::GetSingleton()->GetCharacterController();
+	return charCtrl == GetPlayer()->GetCharacterController();
 }
 
 static bool IsMovementOverrideSequence(UInt16 sequence)
@@ -57,7 +62,7 @@ static bool ShouldUsePhysics(bhkCharacterController *charCtrl)
 	if (VATSCameraData::Get()->mode != 0)
 		return false;
 
-	const auto *animData = PlayerCharacter::GetSingleton()->GetAnimData();
+	const auto *animData = GetPlayer()->GetAnimData();
 
 	if (IsMovementOverrideSequence(animData->animGroupIDs[AnimData::kSequence_Weapon]))
 		return false;
@@ -151,7 +156,7 @@ static void UpdateVelocity(
 		kMoveFlag_Forward | kMoveFlag_Backward |
 		kMoveFlag_Left    | kMoveFlag_Right;
 
-	const auto *mover = (PlayerMover*)PlayerCharacter::GetSingleton()->actorMover;
+	const auto *mover = (PlayerMover*)GetPlayer()->actorMover;
 
 	if ((mover->pcMovementFlags & kMoveMask) != 0) {
 		const auto inputVector = GetInputVector(mover->pcMovementFlags);
@@ -294,6 +299,26 @@ static void __fastcall hook_bhkCharacterController_UpdateThrowback(
 		ThisCall(HookGetOriginal(), charCtrl);
 }
 
+static __declspec(naked) void hook_CheckToRootCharacter()
+{
+	// Don't root the player in place (when not driven by animation)
+	__asm {
+		push ebx
+		call ShouldUsePhysics
+		add esp, 4
+		test al, al
+		jne skip
+		// Overwritten instruction
+		cmp byte ptr [esp+0x1B], 0
+		mov eax, 0xC73ACE
+		jmp eax
+	skip:
+		mov eax, 0xC73C0D
+		jmp eax
+	}
+}
+
+
 extern "C" __declspec(dllexport) bool NVSEPlugin_Query(const NVSEInterface *nvse, PluginInfo *info)
 {
 	info->infoVersion = PluginInfo::kInfoVersion;
@@ -314,6 +339,7 @@ extern "C" __declspec(dllexport) bool NVSEPlugin_Load(NVSEInterface *nvse)
 	patch_call_rel32(0xCD400B, hook_bhkCharacterController_GetFallDistance);
 	patch_call_rel32(0xCD47AB, hook_bhkCharacterController_UpdateThrowback);
 	patch_call_rel32(0xCD4AA2, hook_bhkCharacterController_UpdateThrowback);
+	patch_jmp_rel32(0xC73AC9, hook_CheckToRootCharacter);
 	// Zero out bhkCharacterStateOnGround::clearZVelocityOnFall
 	patch_code(0xCD47F1, "\xC6\x40\x08\x00\xC3");
 	// Don't zero Z velocity with no input on ground
