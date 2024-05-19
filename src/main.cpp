@@ -318,7 +318,6 @@ static __declspec(naked) void hook_CheckToRootCharacter()
 	}
 }
 
-
 extern "C" __declspec(dllexport) bool NVSEPlugin_Query(const NVSEInterface *nvse, PluginInfo *info)
 {
 	info->infoVersion = PluginInfo::kInfoVersion;
@@ -346,6 +345,8 @@ extern "C" __declspec(dllexport) bool NVSEPlugin_Load(NVSEInterface *nvse)
 	patch_code(0xC7386E, "\x90\x90\x90\x90\x90\x90");
 	// Allow jumping while aiming
 	patch_code(0x9422AA, "\xEB");
+	// Don't get stuck walking against edges
+	patch_code(0xC71B64, "\x90\x90\x90");
 	// Use standard ground collision when not giving input
 	patch_code(0xC72025, "\xEB");
 	// Don't factor speedPct into ground collisions
