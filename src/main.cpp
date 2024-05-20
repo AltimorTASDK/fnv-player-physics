@@ -276,8 +276,10 @@ static void __fastcall hook_bhkCharacterStateOnGround_UpdateVelocity(
 static void __fastcall hook_bhkCharacterController_UpdateCharacterState(
 	bhkCharacterController *charCtrl, int, const void *params)
 {
-	if (IsPlayerController(charCtrl))
+	if (IsPlayerController(charCtrl)) {
 		charCtrl->gravityMult = ini::fGravityMult;
+		charCtrl->chrListener.collisionTolerance = 0.f;
+	}
 
 	ThisCall(HookGetOriginal(), charCtrl, params);
 }
