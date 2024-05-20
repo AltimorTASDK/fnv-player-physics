@@ -6,7 +6,7 @@ using enum hkpCharacterState::StateType;
 using enum bhkCharacterListener::ListenerFlags;
 using enum ActorMover::MovementFlags;
 
-constexpr auto kHavokUnitScale = 1.f / 7.f;
+constexpr auto kHavokUnitScale = 1.f / 6.9991255f;
 
 enum ControlState {
 	kControlState_Held = 0,
