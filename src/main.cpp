@@ -253,8 +253,7 @@ static void __fastcall hook_bhkCharacterStateJumping_UpdateVelocity(
 	// Additive jumps
 	const auto startZ = charCtrl->velocity.z;
 	ThisCall(HookGetOriginal(), state, charCtrl);
-	// Don't allow ramp jumps from sliding up steps
-	if (startZ > 0.f && !(charCtrl->chrListener.flags & kIsStairStepping))
+	if (startZ > 0.f)
 		charCtrl->velocity.z += startZ;
 }
 
