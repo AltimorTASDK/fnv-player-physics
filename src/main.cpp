@@ -38,6 +38,7 @@ constexpr auto fKnockbackScale = 10.f;
 
 struct {
 	bool usedJumpInput = true;
+	bool justLanded = false;
 } g_player;
 
 static PlayerCharacter *GetPlayer()
@@ -89,12 +90,11 @@ static void ApplyFriction(
 static void ApplyAcceleration(
 	const CharacterMoveParams &move,
 	AlignedVector4 *velocity,
-	UInt32 state,
 	const NiVector3 &moveVector,
+	bool inAir,
 	float baseSpeed,
 	float deltaTime)
 {
-	const auto inAir = state == kState_InAir;
 	const auto speed = ((NiVector3&)*velocity).DotProduct(moveVector);
 	const auto maxSpeed = inAir ? baseSpeed * ini::fAirSpeed : baseSpeed;
 	const auto speedCap = std::max(baseSpeed, ((NiVector3&)*velocity).Length());
@@ -150,7 +150,9 @@ static void UpdateVelocity(
 	UInt32 state,
 	float deltaTime)
 {
-	if (state != kState_InAir)
+	const auto inAir = state == kState_InAir || g_player.justLanded;
+
+	if (!inAir)
 		ApplyFriction(move, velocity, deltaTime);
 
 	constexpr auto kMoveMask =
@@ -163,7 +165,7 @@ static void UpdateVelocity(
 		const auto inputVector = GetInputVector(mover->pcMovementFlags);
 		const auto moveVector = GetMoveVector(move, inputVector);
 		const auto moveSpeed = mover->moveSpeed * kHavokUnitScale;
-		ApplyAcceleration(move, velocity, state, moveVector, moveSpeed, deltaTime);
+		ApplyAcceleration(move, velocity, moveVector, inAir, moveSpeed, deltaTime);
 	}
 }
 
@@ -271,6 +273,18 @@ static void __fastcall hook_bhkCharacterStateOnGround_UpdateVelocity(
 		charCtrl->velocity.z = 0.f;
 
 	ThisCall(HookGetOriginal(), state, charCtrl);
+
+	if (IsPlayerController(charCtrl))
+		g_player.justLanded = false;
+}
+
+static void __fastcall hook_bhkCharacterStateInAir_UpdateVelocity(
+	bhkCharacterStateInAir *state, int, bhkCharacterController *charCtrl)
+{
+	ThisCall(HookGetOriginal(), state, charCtrl);
+
+	if (IsPlayerController(charCtrl) && charCtrl->chrContext.hkState == kState_OnGround)
+		g_player.justLanded = true;
 }
 
 static void __fastcall hook_bhkCharacterController_UpdateCharacterState(
@@ -337,6 +351,7 @@ extern "C" __declspec(dllexport) bool NVSEPlugin_Load(NVSEInterface *nvse)
 	patch_call_rel32(0x94215F, hook_CheckJumpButton);
 	patch_vtable(kVtbl_bhkCharacterStateJumping, 8, hook_bhkCharacterStateJumping_UpdateVelocity);
 	patch_vtable(kVtbl_bhkCharacterStateOnGround, 8, hook_bhkCharacterStateOnGround_UpdateVelocity);
+	patch_vtable(kVtbl_bhkCharacterStateInAir, 8, hook_bhkCharacterStateInAir_UpdateVelocity);
 	patch_vtable(kVtbl_bhkCharacterController, 50, hook_bhkCharacterController_UpdateCharacterState);
 	patch_call_rel32(0xCD400B, hook_bhkCharacterController_GetFallDistance);
 	patch_call_rel32(0xCD47AB, hook_bhkCharacterController_UpdateThrowback);
