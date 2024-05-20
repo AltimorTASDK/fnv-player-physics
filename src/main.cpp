@@ -3,6 +3,7 @@
 #include <Windows.h>
 
 using enum hkpCharacterState::StateType;
+using enum bhkCharacterListener::ListenerFlags;
 using enum ActorMover::MovementFlags;
 
 constexpr auto kHavokUnitScale = 1.f / 7.f;
@@ -252,7 +253,8 @@ static void __fastcall hook_bhkCharacterStateJumping_UpdateVelocity(
 	// Additive jumps
 	const auto startZ = charCtrl->velocity.z;
 	ThisCall(HookGetOriginal(), state, charCtrl);
-	if (startZ > 0.f)
+	// Don't allow ramp jumps from sliding up steps
+	if (startZ > 0.f && !(charCtrl->chrListener.flags & kIsStairStepping))
 		charCtrl->velocity.z += startZ;
 }
 
