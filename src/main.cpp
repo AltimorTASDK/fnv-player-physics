@@ -359,7 +359,7 @@ extern "C" __declspec(dllexport) bool NVSEPlugin_Load(NVSEInterface *nvse)
 	// Zero out bhkCharacterStateOnGround::clearZVelocityOnFall
 	patch_code(0xCD47F1, "\xC6\x40\x08\x00\xC3");
 	// Don't zero Z velocity with no input on ground
-	patch_code(0xC7386E, "\x90\x90\x90\x90\x90\x90");
+	patch_code(0xC7386A, "\xEB");
 	// Allow jumping while aiming
 	patch_code(0x9422AA, "\xEB");
 	// Use standard ground collision when not giving input
