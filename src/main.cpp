@@ -261,8 +261,7 @@ static void __fastcall hook_bhkCharacterStateJumping_UpdateVelocity(
 
 static bool WillFall(bhkCharacterController *charCtrl)
 {
-	return !(charCtrl->chrListener.flags & bhkCharacterListener::kHasSupport)
-	    && !charCtrl->bFakeSupport;
+	return !(charCtrl->chrListener.flags & kHasSupport) && !charCtrl->bFakeSupport;
 }
 
 static void __fastcall hook_bhkCharacterStateOnGround_UpdateVelocity(
