@@ -34,9 +34,11 @@ constexpr auto fStopSpeed = 16.f;
 constexpr auto fAirSpeed = 1.f;
 constexpr auto fGravityMult = 2.f;
 constexpr auto fKnockbackScale = 10.f;
+constexpr auto fLandingPenaltyImpactSpeed50 = 100.f;
 }
 
 struct {
+	AlignedVector4 airVelocity;
 	bool usedJumpInput = true;
 	bool justLanded = false;
 } g_player;
@@ -264,6 +266,12 @@ static bool WillFall(bhkCharacterController *charCtrl)
 	return !(charCtrl->chrListener.flags & kHasSupport) && !charCtrl->bFakeSupport;
 }
 
+static void ApplyLandingPenalty(bhkCharacterController *charCtrl)
+{
+	const auto delta = NiVector3(charCtrl->velocity - g_player.airVelocity.PS()).Length();
+	charCtrl->velocity *= powf(.5f, delta / ini::fLandingPenaltyImpactSpeed50);
+}
+
 static void __fastcall hook_bhkCharacterStateOnGround_UpdateVelocity(
 	bhkCharacterStateOnGround *state, int, bhkCharacterController *charCtrl)
 {
@@ -273,8 +281,11 @@ static void __fastcall hook_bhkCharacterStateOnGround_UpdateVelocity(
 
 	ThisCall(HookGetOriginal(), state, charCtrl);
 
-	if (IsPlayerController(charCtrl))
+	if (IsPlayerController(charCtrl) && g_player.justLanded) {
 		g_player.justLanded = false;
+		if (ShouldUsePhysics(charCtrl))
+			ApplyLandingPenalty(charCtrl);
+	}
 }
 
 static void __fastcall hook_bhkCharacterStateInAir_UpdateVelocity(
@@ -282,8 +293,12 @@ static void __fastcall hook_bhkCharacterStateInAir_UpdateVelocity(
 {
 	ThisCall(HookGetOriginal(), state, charCtrl);
 
-	if (IsPlayerController(charCtrl) && charCtrl->chrContext.hkState == kState_OnGround)
-		g_player.justLanded = true;
+	if (IsPlayerController(charCtrl)) {
+		if (charCtrl->chrContext.hkState == kState_OnGround)
+			g_player.justLanded = true;
+		else
+			g_player.airVelocity = charCtrl->velocity;
+	}
 }
 
 static void __fastcall hook_bhkCharacterController_UpdateCharacterState(
